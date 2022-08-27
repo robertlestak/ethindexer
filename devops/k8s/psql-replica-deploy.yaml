@@ -1,0 +1,85 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: indexdb-replica-v1
+  namespace: ethindexer-indexer
+  labels:
+    app: indexdb-replica
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: indexdb-replica
+      version: v1
+  serviceName: "indexdb-replica"
+  template:
+    metadata:
+      labels:
+        app: indexdb-replica
+        version: v1
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/path: '/metrics'
+        prometheus.io/port: '9187'
+        sidecar.istio.io/inject: "false"
+    spec:
+      terminationGracePeriodSeconds: 30
+      nodeSelector:
+        kubernetes.io/hostname: muir
+      containers:
+      - name: postgres
+        image: postgres:12
+        # command: ["sleep", "infinity"]
+        args:
+        - -c
+        - config_file=/config/postgresql.conf
+        resources:
+          limits:
+            memory: 60000Mi
+            cpu: 30000m
+          requests:
+            memory: 1000Mi
+            cpu: 1000m
+        ports:
+        - containerPort: 5432
+        envFrom:
+        - secretRef:
+            name: indexer
+        volumeMounts:
+          - mountPath: "/var/lib/postgresql/data"
+            name: postgresql
+          - mountPath: "/master"
+            name: psql-master
+          - mountPath: "/config"
+            name: config
+      - name: metrics
+        image: bitnami/postgres-exporter
+        ports:
+        - containerPort: 9187
+          name: metrics
+        envFrom:
+        - secretRef:
+            name: indexer
+        resources:
+          limits:
+            memory: 100Mi
+            cpu: 100m
+      volumes:
+        - name: postgresql
+          hostPath:
+            path: /mnt/ssd2/ethindexer/indexer/prod/db
+        - name: psql-master
+          hostPath:
+            path: /mnt/ansel-ssd2/ethindexer/indexer/prod/db
+          #persistentVolumeClaim:
+          #  claimName: indexdb
+        - name: config
+          configMap:
+            name: indexdb-config
+            items:
+            - key: postgresql.conf
+              path: postgresql.conf
+            - key: pg_hba.conf
+              path: pg_hba.conf

@@ -1,0 +1,86 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: ethindexer-indexer
+  labels:
+    app: indexer
+    component: redis
+spec:
+  replicas: 1
+  serviceName: "redis"
+  selector:
+    matchLabels:
+      app: indexer
+      component: redis
+  template:
+    metadata:
+      labels:
+        app: indexer
+        component: redis
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+      - name: redis
+        image: redis:6
+        command: ["redis-server"]
+        args: ["/config/redis.conf"]
+        securityContext:
+          runAsUser: 0
+        resources:
+          requests:
+            cpu: 500m
+            memory: 500Mi
+          limits:
+            cpu: 4000m
+            memory: 40Gi
+        ports:
+          - containerPort: 6379
+            name: tcp-redis
+        volumeMounts:
+        - name: redis
+          mountPath: /data
+        - name: config
+          mountPath: /config
+      volumes:
+      - name: redis
+        persistentVolumeClaim:
+          claimName: redis
+      - name: config
+        configMap:
+          name: indexer-redis
+          items:
+          - key: redis.conf
+            path: redis.conf
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis
+  namespace: ethindexer-indexer
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: ethindexer-indexer
+  labels:
+    app: indexer
+    component: redis
+spec:
+  type: ClusterIP
+  selector:
+    app: indexer
+    component: redis
+  ports:
+    - protocol: TCP
+      port: 6379
+      name: tcp-redis
+      targetPort: 6379

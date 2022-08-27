@@ -1,0 +1,40 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  labels:
+    app: indexdb-wal-cleaner
+  name: indexdb-wal-cleaner
+  namespace: ethindexer-indexer
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      labels:
+        app: indexdb-wal-cleaner
+    spec:
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+        spec:
+          nodeSelector:
+            kubernetes.io/hostname: muir
+          containers:
+          - image: registry.lestak.sh/ethindexer-indexdb-wal-cleaner:2
+            envFrom:
+            - secretRef:
+                name: indexer
+            volumeMounts:
+            - mountPath: "/master"
+              name: psql-master
+            imagePullPolicy: IfNotPresent
+            name: wal-cleaner
+          restartPolicy: OnFailure
+          volumes:
+          - name: psql-master
+            hostPath:
+              path: /mnt/ansel-ssd2/ethindexer/indexer/prod/db
+  schedule: "0 0 * * *"
+  successfulJobsHistoryLimit: 1

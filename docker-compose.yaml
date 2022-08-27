@@ -1,0 +1,81 @@
+version: '3.1'
+
+services:
+  indexer:
+    image: eth-indexer
+    command: indexer
+    build: .
+    restart: always
+    networks:
+      - ethindexer
+    env_file: .env
+    labels:
+      traefik.enable: "false"
+
+  indexbackfill:
+    image: eth-indexer
+    command: backfill
+    build: .
+    restart: always
+    networks:
+      - ethindexer
+    env_file: .env
+    labels:
+      traefik.enable: "false"
+
+  indexworker:
+    image: eth-indexer
+    command: worker
+    build: .
+    restart: always
+    networks:
+      - ethindexer
+    env_file: .env
+    labels:
+      traefik.enable: "false"
+
+  indexworker2:
+    image: eth-indexer
+    command: worker
+    build: .
+    restart: always
+    networks:
+      - ethindexer
+    env_file: .env
+    labels:
+      traefik.enable: "false"
+    
+  indexserver:
+    image: eth-indexer
+    command: server
+    build: .
+    restart: always
+    networks:
+      - web
+      - ethindexer
+    env_file: .env
+    expose:
+    - "8081"
+    labels:
+      traefik.enable: "false"
+
+  indexredis:
+    image: redis
+    restart: always
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - ethindexer
+    labels:
+      traefik.enable: "false"
+    volumes:
+      - redis:/data
+      - $PWD/redis.conf:/usr/local/etc/redis/redis.conf
+
+networks:
+  web:
+    external: true
+  ethindexer:
+    external: true
+
+volumes:
+  redis:

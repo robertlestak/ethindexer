@@ -1,0 +1,45 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: indexer-indexer
+  namespace: ethindexer-indexer
+  labels:
+    app: indexer
+    component: indexer
+spec:
+  serviceName: indexer
+  replicas: 1
+  selector:
+    matchLabels:
+      app: indexer
+      component: indexer
+  template:
+    metadata:
+      labels:
+        app: indexer
+        component: indexer
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+      - name: indexer
+        image: registry.lestak.sh/ethindexer-indexer:36
+        args: ["indexer"]
+        resources:
+          requests:
+            cpu: 50m
+            memory: 50Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        envFrom:
+          - secretRef:
+              name: indexer
+        #env:
+        #- name: LOG_LEVEL
+        #  value: debug
+      tolerations:
+        - key: arch
+          value: arm64
+          operator: "Equal"
+          effect: "PreferNoSchedule"

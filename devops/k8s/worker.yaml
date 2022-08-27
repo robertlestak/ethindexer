@@ -1,0 +1,41 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: indexer-worker
+  namespace: ethindexer-indexer
+  labels:
+    app: indexer
+    component: worker
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: indexer
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: indexer
+        component: worker
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+      - name: worker
+        image: registry.lestak.sh/ethindexer-indexer:38
+        args: ["worker"]
+        resources:
+          requests:
+            cpu: 500m
+            memory: 500Mi
+          limits:
+            cpu: 4000m
+            memory: 1Gi
+        envFrom:
+          - secretRef:
+              name: indexer
+      tolerations:
+        - key: arch
+          value: arm64
+          operator: "Equal"
+          effect: "PreferNoSchedule"

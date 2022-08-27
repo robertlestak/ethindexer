@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: indexdb-replica
+  namespace: ethindexer-indexer
+  labels:
+    app: indexdb-replica
+spec:
+  type: ClusterIP
+  selector:
+    app: indexdb-replica
+  ports:
+    - protocol: TCP
+      port: 5432
+      name: postgres
+      targetPort: 5432

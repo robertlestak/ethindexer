@@ -1,0 +1,35 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: indexer-backfill
+  namespace: ethindexer-indexer
+  labels:
+    app: indexer
+    component: backfill
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: indexer
+      component: backfill
+  template:
+    metadata:
+      labels:
+        app: indexer
+        component: backfill
+    spec:
+      containers:
+      - name: backfill
+        image: registry.lestak.sh/ethindexer-indexer:41
+        args: ["backfill"]
+        resources:
+          requests:
+            cpu: 500m
+            memory: 500Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        envFrom:
+          - secretRef:
+              name: indexer
